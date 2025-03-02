@@ -3,7 +3,6 @@
 🚨 **IMPORTANT NOTICE:** 🚨  
 **This repository contains supporting materials for a paper currently under submission.  
 The contents are subject to change based on revisions and feedback.**  
-🚧 **Do not cite or reference this repository as a final source.** 🚧  
 
 ---
 
@@ -37,5 +36,5 @@ CAPACITY=20G ERASE=1M PAGE=4k SSDFILL=0.875 PATTERN=zones ZONES="s0.9 f0.1 s0.1 
 
 ## 📜 Citation & License
 
-- ❌ **No license has been assigned** to this repository at this time. Usage rights will be determined once the paper is accepted.  
+- ❌ **No license has been assigned** to this repository at this time.  
 - 📄 Once the paper is **published**, we will update this repository with citation details.  
