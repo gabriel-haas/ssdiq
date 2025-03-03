@@ -1,7 +1,6 @@
 #!/bin/bash
 set -x 
 
-# DEBUG
 export FILESIZE= # let iob figure it out
 
 FILENAME=$1

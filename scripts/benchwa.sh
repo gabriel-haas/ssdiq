@@ -11,8 +11,6 @@ export IOENGINE=io_uring
 export FILL=1
 
 cmake -DCMAKE_BUILD_TYPE=Release ..
-#cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
-#cmake -DCMAKE_BUILD_TYPE=Debug ..
 make -j iob
 
 sanitize_nvme() {
@@ -83,19 +81,6 @@ sanitize_nvme_and_init
 OVERWRITE=6
 run_wa_exp_zipf 1
 
-
-############################################
-############################################
-############################################
-############################################
-exit 1
-############################################
-############################################
-############################################
-############################################
-############################################
-
-
 ############################################
 # zones
 OVERWRITE=5
@@ -112,36 +97,4 @@ run_wa_exp_zones "s0.9 f0.1 s0.1 f0.9"
 OVERWRITE=8
 sanitize_nvme_and_init
 run_wa_exp_zones "s0.95 f0.05 s0.05 f0.95"
-
-###################################################################################################
-###################################################################################################
-
-#SHUFFLE="-shuffle"
-#sanitize_nvme_and_init
-#sudo -E INIT=false   IO_SIZE_PERCENT_FILE=$OVERWRITE IO_DEPTH=128 BS=$UNI_BS THREADS=4 PATTERN=zones$SHUFFLE ZONES="s0.9 f0.5 s0.1 f0.5" RW=1  iob/iob >> iob-output-$PREFIX.csv
-
-#SHUFFLE="-noshuffle"
-#sanitize_nvme_and_init
-#sudo -E INIT=false   IO_SIZE_PERCENT_FILE=$OVERWRITE IO_DEPTH=128 BS=$UNI_BS THREADS=4 PATTERN=zones$SHUFFLE ZONES="s0.9 f0.5 s0.1 f0.5" RW=1  iob/iob >> iob-output-$PREFIX.csv
-
-
-#SHUFFLE="-noshuffle"
-#sanitize_nvme_and_init
-#sudo -E INIT=false   IO_SIZE_PERCENT_FILE=$OVERWRITE IO_DEPTH=128 BS=$UNI_BS THREADS=4 PATTERN=zones$SHUFFLE ZONES="s0.8 f0.2 s0.2 f0.8" RW=1  iob/iob >> iob-output-$PREFIX.csv
-
-#SHUFFLE="-noshuffle"
-#sanitize_nvme_and_init
-#sudo -E INIT=false   IO_SIZE_PERCENT_FILE=$OVERWRITE IO_DEPTH=128 BS=$UNI_BS THREADS=4 PATTERN=zones$SHUFFLE ZONES="s0.9 f0.1 s0.1 f0.9" RW=1  iob/iob >> iob-output-$PREFIX.csv
-
-#sanitize_nvme_and_init
-#sudo -E INIT=false   IO_SIZE_PERCENT_FILE=$OVERWRITE IO_DEPTH=128 BS=$UNI_BS THREADS=4 PATTERN=zones$SHUFFLE ZONES="s0.95 f0.05 s0.05 f0.95" RW=1  iob/iob >> iob-output-$PREFIX.csv
-
-#sanitize_nvme_and_init
-#sudo -E INIT=false   IO_SIZE_PERCENT_FILE=$OVERWRITE IO_DEPTH=128 BS=$UNI_BS THREADS=4 PATTERN=zones$SHUFFLE ZONES="s0.5 f0 s0.5 f1" RW=1  iob/iob >> iob-output-$PREFIX.csv
-
-#sanitize_nvme_and_init
-#sudo -E INIT=false   IO_SIZE_PERCENT_FILE=$OVERWRITE IO_DEPTH=128 BS=$UNI_BS THREADS=4 PATTERN=zones$SHUFFLE ZONES="s0.9 f0 s0.1 f1" RW=1  iob/iob >> iob-output-$PREFIX.csv
-
-
-
 
