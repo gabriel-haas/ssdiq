@@ -16,8 +16,8 @@ This repository contains supplementary material for the SSD-iq paper, including 
 ## Repository Contents
 - `iob/` - Source code of the IOB benchmarking tool  
 - `sim/` - Source code of the GC simulator  
-- `scripts/` - Contains the scripts for benchmarking  
-- `paper/` - Supporting material for the paper, including data and scripts to generate plots  
+- `scripts/` - Scripts for running benchmarks
+- `paper/` - Supporting scripts for data analysis and plot generation
 
 ## Building
 
@@ -39,18 +39,20 @@ iob/iob --filename=/blk/w0 --filesize=10G --ioengine=io_uring --init=disable --i
 sim/sim --capacity=20G --erase=1M --page=4k --ssdfill=0.875 --pattern=zones --zones="s0.9 f0.1 s0.1 f0.9" --gc=greedy --writes=10
 ```
 
-## Reproducibility: Benchmarks, Scripts & Plots
+## Benchmarks & Reproducibility
 
 The `scripts/` folder contains all scripts used to gather the data presented in the paper:
-- `benchwa.sh` - Used for all write amplification-related benchmarks (Zipf, Zones, Read-Only)
-- `benchseq.sh` - Used for ZNS-like workloads
-- `benchlat.sh` - Used for latency under load experiments
-- `benchbench.sh` - Gathers all data points for the benchmark summary table
+- `benchwa.sh` - write amplification-related benchmarks (Zipf, Zones, Read-Only)
+- `benchseq.sh` - ZNS-like workloads
+- `benchlat.sh` - latency under load experiments
+- `benchbench.sh` - Gathers data for the benchmark summary table
 
 `iob` generates several log files, which can be evaluated using the R scripts provided in the `paper/` folder:
 - `paper.R` - Generates all write amplification and throughput-related plots
 - `latency.R` - Generates latency plots
 - `plotsim.R` - Generates all simulator-based plots
+
+> **Note:** Large data assets previously stored under `paper/` have been moved to a separate repository: [gabriel-haas/ssdiq-paper-assets](https://github.com/gabriel-haas/ssdiq-paper-assets)
 
 ## Citation
 
