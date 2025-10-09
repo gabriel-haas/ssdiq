@@ -9,17 +9,17 @@
 
 ## SSD-iq
 
-This repository contains supplementary material for the SSD-iq paper, including the `iob` benchmarking tool and a simple SSD simulator.
+This repository contains supplementary material for the SSD-iq paper, including the `iob` benchmarking tool and SSD simulator.
 
 📄 **Paper:** [SSD-iq: Uncovering the Hidden Side of SSD Performance](https://www.vldb.org/pvldb/vol18/p4295-haas.pdf)
 
-## 📁 Repository Contents
+## Repository Contents
 - `iob/` - Source code of the IOB benchmarking tool  
 - `sim/` - Source code of the GC simulator  
 - `scripts/` - Contains the scripts for benchmarking  
 - `paper/` - Supporting material for the paper, including data and scripts to generate plots  
 
-## ⚙️ Building
+## Building
 
 ```sh
 mkdir build && cd build
@@ -27,19 +27,19 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
 
-## 🚀 Running IOB
+## Running IOB
 
 ```sh
-FILENAME=/blk/k0 FILESIZE=10G IOENGINE=io_uring INIT=disable IO_SIZE=5 IO_DEPTH=128 BS=4K THREADS=4 PATTERN=uniform RW=0 iob/iob
+iob/iob --filename=/blk/w0 --filesize=10G --ioengine=io_uring --init=disable --io_size=10G --iodepth=128 --bs=4K --threads=4 --pattern=uniform --rw=0
 ```
 
-## 🛠️ Running the GC Simulator
+## Running the GC Simulator
 
 ```sh
-CAPACITY=20G ERASE=1M PAGE=4K SSDFILL=0.875 PATTERN=zones ZONES="s0.9 f0.1 s0.1 f0.9" GC=greedy WRITES=10 sim/sim
+sim/sim --capacity=20G --erase=1M --page=4k --ssdfill=0.875 --pattern=zones --zones="s0.9 f0.1 s0.1 f0.9" --gc=greedy --writes=10
 ```
 
-## 📊 Reproducibility: Benchmarks, Scripts & Plots
+## Reproducibility: Benchmarks, Scripts & Plots
 
 The `scripts/` folder contains all scripts used to gather the data presented in the paper:
 - `benchwa.sh` - Used for all write amplification-related benchmarks (Zipf, Zones, Read-Only)
@@ -52,7 +52,7 @@ The `scripts/` folder contains all scripts used to gather the data presented in 
 - `latency.R` - Generates latency plots
 - `plotsim.R` - Generates all simulator-based plots
 
-## 📜 Citation
+## Citation
 
 📄 **Paper:** [SSD-iq: Uncovering the Hidden Side of SSD Performance](https://www.vldb.org/pvldb/vol18/p4295-haas.pdf)
 
@@ -71,5 +71,5 @@ The `scripts/` folder contains all scripts used to gather the data presented in 
 }
 ```
 
-## Licence
-- ❌ **No license has been assigned** to this repository at this time.  
+## License
+This project is licensed under the [MIT License](LICENSE).
