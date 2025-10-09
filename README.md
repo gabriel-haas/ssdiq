@@ -1,12 +1,17 @@
-# SSD-iq
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="logo/logo.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="logo/logo.svg">
+    <img alt="SSD-iq logo" src="logo/logo.svg" height="80">
+  </picture>
+</div>
+<br>
 
-🚨 **IMPORTANT NOTICE:** 🚨  
-**This repository contains supporting materials for a paper currently under submission.  
-The contents are subject to change based on revisions and feedback.**  
+## SSD-iq
 
----
+This repository contains supplementary material for the SSD-iq paper, including the `iob` benchmarking tool and a simple SSD simulator.
 
-This repository contains supplementary material for the SSD-iq paper, including the IOB benchmarking tool, scripts for running benchmarks, and additionally, the data, simulator, and scripts used to generate the plots in the paper.
+📄 **Paper:** [SSD-iq: Uncovering the Hidden Side of SSD Performance](https://www.vldb.org/pvldb/vol18/p4295-haas.pdf)
 
 ## 📁 Repository Contents
 - `iob/` - Source code of the IOB benchmarking tool  
@@ -47,7 +52,24 @@ The `scripts/` folder contains all scripts used to gather the data presented in 
 - `latency.R` - Generates latency plots
 - `plotsim.R` - Generates all simulator-based plots
 
-## 📜 Citation & License
+## 📜 Citation
 
+📄 **Paper:** [SSD-iq: Uncovering the Hidden Side of SSD Performance](https://www.vldb.org/pvldb/vol18/p4295-haas.pdf)
+
+```
+@article{DBLP:journals/pvldb/HaasLBL25,
+  author       = {Gabriel Haas and
+                  Bohyun Lee and
+                  Philippe Bonnet and
+                  Viktor Leis},
+  title        = {SSD-iq: Uncovering the Hidden Side of {SSD} Performance},
+  journal      = {Proc. {VLDB} Endow.},
+  volume       = {18},
+  number       = {11},
+  pages        = {4295--4308},
+  year         = {2025}
+}
+```
+
+## Licence
 - ❌ **No license has been assigned** to this repository at this time.  
-- 📄 Once the paper is **published**, we will update this repository with citation details.
