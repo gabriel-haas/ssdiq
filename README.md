@@ -1,7 +1,7 @@
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: light)" srcset="logo/logo.svg">
-    <source media="(prefers-color-scheme: dark)" srcset="logo/logo.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="logo/logo-dark.svg">
     <img alt="SSD-iq logo" src="logo/logo.svg" height="80">
   </picture>
 </div>
