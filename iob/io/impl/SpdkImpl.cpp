@@ -1,24 +1,22 @@
 #if LEANSTORE_INCLUDE_SPDK
 #include "SpdkImpl.hpp"
 // -------------------------------------------------------------------------------------
-#include <cstring>
 #include "leanstore/io/IoChannel.hpp"
+#include <cstring>
 
-namespace mean
-{
+namespace mean {
 // -------------------------------------------------------------------------------------
-SpdkEnv::~SpdkEnv()
-{
-   controller.reset(nullptr); 
+SpdkEnv::~SpdkEnv() {
+   controller.reset(nullptr);
    std::cout << "SpdkEnv deinit" << std::endl;
    SpdkEnvironment::deinit();
 }
 // -------------------------------------------------------------------------------------
-void SpdkEnv::init(IoOptions options)
-{
-   std::thread([] {  // hack so that the spdk pinning has no influence on leanstore threads
+void SpdkEnv::init(IoOptions options) {
+   std::thread([] { // hack so that the spdk pinning has no influence on leanstore threads
       SpdkEnvironment::init();
-   }).join();
+   })
+       .join();
    controller = std::make_unique<NVMeMultiController>();
    // controller = std::make_unique<NVMeRaid0>();
    controller->connect(options.path);
@@ -32,42 +30,35 @@ void SpdkEnv::init(IoOptions options)
    }
 }
 
-SpdkChannel& SpdkEnv::getIoChannel(int channel)
-{
+SpdkChannel& SpdkEnv::getIoChannel(int channel) {
    ensure(channels.size() > 0, "don't forget to initizalize the io env first");
    ensure(channel < (int)channels.size(), "There are only " + std::to_string(channels.size()) + " channels available.");
    // std::cout << "getChannel: " << channel << std::endl << std::flush;
    return *channels.at(channel);
 }
 
-int SpdkEnv::deviceCount()
-{
+int SpdkEnv::deviceCount() {
    return controller->deviceCount();
 }
 
-int SpdkEnv::channelCount()
-{
+int SpdkEnv::channelCount() {
    return controller->qpairSize();
 }
 
-u64 SpdkEnv::storageSize()
-{
+u64 SpdkEnv::storageSize() {
    return controller->nsSize();
 }
 
-void* SpdkEnv::allocIoMemory(size_t size, size_t align)
-{
+void* SpdkEnv::allocIoMemory(size_t size, size_t align) {
    return SpdkEnvironment::dma_malloc(size, align);
 }
 
-void* SpdkEnv::allocIoMemoryChecked(size_t size, size_t align)
-{
+void* SpdkEnv::allocIoMemoryChecked(size_t size, size_t align) {
    auto mem = SpdkEnvironment::dma_malloc(size, align);
    null_check(mem, "Memory allocation failed");
    return mem;
 }
-void SpdkEnv::freeIoMemory(void* ptr, [[maybe_unused]]size_t size)
-{
+void SpdkEnv::freeIoMemory(void* ptr, [[maybe_unused]] size_t size) {
    SpdkEnvironment::dma_free(ptr);
 }
 
@@ -81,11 +72,10 @@ DeviceInformation SpdkEnv::getDeviceInfo() {
    return d;
 }
 // -------------------------------------------------------------------------------------
-// Channel 
+// Channel
 // -------------------------------------------------------------------------------------
-SpdkChannel::SpdkChannel(IoOptions ioOptions, NVMeMultiController& controller, int queue) 
-   : options(ioOptions), controller(controller), queue(queue), lbaSize(controller.nsLbaDataSize()), outstanding(controller.deviceCount())
-{
+SpdkChannel::SpdkChannel(IoOptions ioOptions, NVMeMultiController& controller, int queue)
+    : options(ioOptions), controller(controller), queue(queue), lbaSize(controller.nsLbaDataSize()), outstanding(controller.deviceCount()) {
    write_request_stack.reserve(ioOptions.iodepth);
    int c = controller.deviceCount();
    for (int i = 0; i < c; i++) {
@@ -94,25 +84,23 @@ SpdkChannel::SpdkChannel(IoOptions ioOptions, NVMeMultiController& controller, i
    }
 }
 
-SpdkChannel::~SpdkChannel()
-{
+SpdkChannel::~SpdkChannel() {
 }
 
-void SpdkChannel::prepare_request(RaidRequest<SpdkIoReq>* req, SpdkIoReqCallback spdkCb)
-{
+void SpdkChannel::prepare_request(RaidRequest<SpdkIoReq>* req, SpdkIoReqCallback spdkCb) {
    // base
    switch (req->base.type) {
-      case IoRequestType::Read:
-         req->impl.type = SpdkIoReqType::Read;
-         break;
-      case IoRequestType::Write:
-         req->impl.type = SpdkIoReqType::Write;
-         break;
-      case IoRequestType::Fsync:
-         req->impl.type = SpdkIoReqType::OtherFlush;
-         break;
-      default:
-         throw std::logic_error("IoRequestType not supported" + std::to_string((int)req->base.type));
+   case IoRequestType::Read:
+      req->impl.type = SpdkIoReqType::Read;
+      break;
+   case IoRequestType::Write:
+      req->impl.type = SpdkIoReqType::Write;
+      break;
+   case IoRequestType::Fsync:
+      req->impl.type = SpdkIoReqType::OtherFlush;
+      break;
+   default:
+      throw std::logic_error("IoRequestType not supported" + std::to_string((int)req->base.type));
    }
    //
    req->impl.buf = req->base.buffer();
@@ -121,18 +109,16 @@ void SpdkChannel::prepare_request(RaidRequest<SpdkIoReq>* req, SpdkIoReqCallback
    req->impl.callback = spdkCb;
 }
 
-void SpdkChannel::_push(RaidRequest<SpdkIoReq>* req)
-{
+void SpdkChannel::_push(RaidRequest<SpdkIoReq>* req) {
    req->impl.this_ptr = this;
    prepare_request(req, [](SpdkIoReq* io_req) {
-         auto req = reinterpret_cast<RaidRequest<SpdkIoReq>*>(io_req);
-         req->base.innerCallback.callback(&req->base);
+      auto req = reinterpret_cast<RaidRequest<SpdkIoReq>*>(io_req);
+      req->base.innerCallback.callback(&req->base);
    });
    write_request_stack.push_back(req);
 }
 
-void SpdkChannel::_printSpecializedCounters(std::ostream& ss)
-{
+void SpdkChannel::_printSpecializedCounters(std::ostream& ss) {
    ss << "spdk: ";
 }
 
@@ -198,6 +184,6 @@ int InterfaceBase::_syncReadsPollServer() override {
 }
 */
 // -------------------------------------------------------------------------------------
-}  // namespace mean
+} // namespace mean
 // -------------------------------------------------------------------------------------
 #endif

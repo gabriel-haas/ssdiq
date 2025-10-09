@@ -7,45 +7,42 @@
 #include <string>
 #include <vector>
 
-class Raid0
-{
+class Raid0 {
    const int deviceCnt;
    const int chunkSize;
-  public:
+
+ public:
    Raid0(int deviceCnt, int chunkSize) : deviceCnt(deviceCnt), chunkSize(chunkSize) {}
-   void calc(uint64_t offset, int& deviceOut, uint64_t& offsetOut)
-   {
+   void calc(uint64_t offset, int& deviceOut, uint64_t& offsetOut) const {
       const uint64_t chunk = offset / chunkSize;
       const uint64_t offsetInChunk = offset % chunkSize;
       deviceOut = chunk % deviceCnt;
-      offsetOut = (chunk / deviceCnt) * chunkSize + offsetInChunk;  // / deviceCnt * lbasPerDevice + addrRemainder;
+      offsetOut = (chunk / deviceCnt) * chunkSize + offsetInChunk; // / deviceCnt * lbasPerDevice + addrRemainder;
    }
 };
 
-class Raid5
-{
+class Raid5 {
    const int deviceCnt;
    const int chunkSize;
-  public:
+
+ public:
    Raid5(int deviceCnt, int chunkSize) : deviceCnt(deviceCnt), chunkSize(chunkSize) {}
-   void calc(uint64_t offset, int& deviceOut, uint64_t& offsetOut)
-   {
+   void calc(uint64_t offset, int& deviceOut, uint64_t& offsetOut) const {
       const uint64_t chunk = offset / chunkSize;
       const uint64_t offsetInChunk = offset % chunkSize;
       deviceOut = chunk % deviceCnt;
-      offsetOut = (chunk / deviceCnt) * chunkSize + offsetInChunk;  // / deviceCnt * lbasPerDevice + addrRemainder;
+      offsetOut = (chunk / deviceCnt) * chunkSize + offsetInChunk; // / deviceCnt * lbasPerDevice + addrRemainder;
    }
 };
 
-template<typename DeviceType>
-class RaidController
-{
+template <typename DeviceType>
+class RaidController {
    static constexpr int CHUNK_SIZE = 1 * 1024 * 1024;
    std::vector<std::string> devices;
    std::vector<DeviceType> fds;
-  public:
-   RaidController(std::string connectionString)
-   {
+
+ public:
+   RaidController(std::string connectionString) {
       std::istringstream iss(connectionString);
       std::string device;
       while (std::getline(iss, device, ';')) {
@@ -65,8 +62,7 @@ class RaidController
    DeviceType deviceTypeOrFd(int d) {
       return fds.at(d);
    }
-   void forEach(std::function<void (std::string& dev, DeviceType& fd)> fun)
-   {
+   void forEach(std::function<void(std::string& dev, DeviceType& fd)> fun) {
       const int size = devices.size();
       for (int i = 0; i < size; i++) {
          fun(devices[i], fds[i]);
@@ -84,8 +80,7 @@ class RaidController
       deviceOut = &fds[deviceSelector];
       return std::make_tuple(fds[deviceSelector], offsetOut);
    }*/
-   void calc(uint64_t offset, uint64_t len, DeviceType*& deviceOut, uint64_t& offsetOut)
-   {
+   void calc(uint64_t offset, uint64_t len, DeviceType*& deviceOut, uint64_t& offsetOut) {
       assert(len <= CHUNK_SIZE);
       Raid0 raid(devices.size(), CHUNK_SIZE);
       int deviceSelector;

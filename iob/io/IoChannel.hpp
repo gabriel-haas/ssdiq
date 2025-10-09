@@ -1,26 +1,17 @@
 #pragma once
 // -------------------------------------------------------------------------------------
+#include "Hist.hpp"
 #include "IoRequest.hpp"
-#include "IoOptions.hpp"
 #include "Time.hpp"
 #include "Units.hpp"
-#include "Exceptions.hpp"
-#include "Hist.hpp"
-#include "RequestStack.hpp"
-#include "Raid.hpp"
 // -------------------------------------------------------------------------------------
 #include <atomic>
 #include <cstdint>
-#include <limits>
-#include <memory>
-#include <stdexcept>
-#include <string>
 #include <cstring>
-#include <vector>
 #include <iomanip>
+#include <vector>
 // -------------------------------------------------------------------------------------
-namespace mean
-{
+namespace mean {
 // -------------------------------------------------------------------------------------
 struct IoChannelCounterAggregator;
 struct IoChannelCounters {
@@ -38,7 +29,7 @@ struct IoChannelCounters {
    Hist<int, u64> outstandingHistRead{1000, 0, 2000};
    Hist<int, u64> outstandingHistWrite{1000, 0, 2000};
    // -------------------------------------------------------------------------------------
-//#define IO_PER_SSD_LATENCY_COUNTERS
+// #define IO_PER_SSD_LATENCY_COUNTERS
 #ifdef IO_PER_SSD_LATENCY_COUNTERS
    struct DeviceCounters {
       int outstanding = 0;
@@ -48,13 +39,12 @@ struct IoChannelCounters {
    };
    std::vector<DeviceCounters> device_counters;
    // -------------------------------------------------------------------------------------
-   IoChannelCounters(int deviceCount) : device_counters(deviceCount) { }
+   IoChannelCounters(int deviceCount) : device_counters(deviceCount) {}
 #else
-   IoChannelCounters(int deviceCount) { }
+   IoChannelCounters(int deviceCount) {}
 #endif
    // -------------------------------------------------------------------------------------
-   void reset()
-   {
+   void reset() {
       // pushed = 0;
       // outstanding = 0;
       completed = 0;
@@ -73,26 +63,22 @@ struct IoChannelCounters {
       outstandingHistWrite.resetData();
    }
    void handlePush() { pushed++; }
-   void handleSubmit(int submitted)
-   {
+   void handleSubmit(int submitted) {
       pushed.fetch_add(-submitted);
       outstanding.fetch_add(submitted);
       outstandingHist.increaseSlot(outstanding);
    }
-   void handlePoll(int polled)
-   {
+   void handlePoll(int polled) {
       outstanding.fetch_add(-polled);
       completed.fetch_add(polled);
       pollHist.increaseSlot(polled);
    }
-   void handleSubmitReq(IoBaseRequest& req)
-   {
+   void handleSubmitReq(IoBaseRequest& req) {
 #ifdef IO_PER_SSD_LATENCY_COUNTERS
       device_counters[req.device].outstanding++;
 #endif
    }
-   void handleCompletedReq(IoBaseRequest& req)
-   {
+   void handleCompletedReq(IoBaseRequest& req) {
       req.stats.completion_time = readTSC();
       const auto diff = tscDifferenceUs(req.stats.completion_time, req.stats.push_time);
 #ifdef IO_PER_SSD_LATENCY_COUNTERS
@@ -100,12 +86,12 @@ struct IoChannelCounters {
 #endif
       if (req.type == IoRequestType::Read) {
          readHist.increaseSlot(diff);
-         //leanstore::WorkerCounters::myCounters().ssd_read_latency.increaseSlot(diff);
+         // leanstore::WorkerCounters::myCounters().ssd_read_latency.increaseSlot(diff);
 #ifdef IO_PER_SSD_LATENCY_COUNTERS
          device_counters[req.device].readHist.increaseSlot(diff);
          device_counters[req.device].maxReadLat = std::max(device_counters[req.device].maxReadLat, diff);
 #endif
-         //leanstore::SSDCounters::myCounters().reads[req.device]++;
+         // leanstore::SSDCounters::myCounters().reads[req.device]++;
          outstandingHistRead.increaseSlot(outstandingRead);
          outstandingRead--;
       } else if (req.type == IoRequestType::Write) {
@@ -113,17 +99,16 @@ struct IoChannelCounters {
 #ifdef IO_PER_SSD_LATENCY_COUNTERS
          device_counters[req.device].writeHist.increaseSlot(diff);
 #endif
-         //leanstore::WorkerCounters::myCounters().ssd_write_latency.increaseSlot(diff);
-         //leanstore::SSDCounters::myCounters().writes[req.device]++;
+         // leanstore::WorkerCounters::myCounters().ssd_write_latency.increaseSlot(diff);
+         // leanstore::SSDCounters::myCounters().writes[req.device]++;
          outstandingHistWrite.increaseSlot(outstandingWrite);
          outstandingWrite--;
       }
    }
    void printCountersHeader(std::ostream& ss) {
-     ss << "pushedx,outstandingx,completed_k,read50,read99p9,write50,write99p9,poll10,poll50,poll90,out10,out50,out90";
+      ss << "pushedx,outstandingx,completed_k,read50,read99p9,write50,write99p9,poll10,poll50,poll90,out10,out50,out90";
    }
-   void printCounters(std::ostream& ss)
-   {
+   void printCounters(std::ostream& ss) {
       ss << std::setprecision(3);
       ss << pushed << "," << outstanding << "," << completed / KILO << ",";
       ss << readHist.getPercentile(50) << "," << readHist.getPercentile(99.9) << ",";
@@ -142,8 +127,8 @@ struct IoChannelCounters {
          c.write_latncy50p[i] = device_counters[i].writeHist.getPercentile(50);
          c.write_latncy99p[i] = device_counters[i].writeHist.getPercentile(99);
          c.write_latncy99p9[i] = device_counters[i].writeHist.getPercentile(99.9);
-         //c.outstandingx_max[i] = std::max(device_counters[i].outstanding, (int)c.outstandingx_max[i].load());
-         //c.outstandingx_min[i] = std::min(device_counters[i].outstanding, (int)c.outstandingx_min[i].load());
+         // c.outstandingx_max[i] = std::max(device_counters[i].outstanding, (int)c.outstandingx_max[i].load());
+         // c.outstandingx_min[i] = std::min(device_counters[i].outstanding, (int)c.outstandingx_min[i].load());
       }
 #endif
       /*
@@ -161,8 +146,7 @@ struct IoChannelCounterAggregator {
    int maxRead99p9 = 0;
    int maxWrite99p9 = 0;
    int count = 0;
-   void aggregate(IoChannelCounters& counters)
-   {
+   void aggregate(IoChannelCounters& counters) {
       count++;
       totalPushed += counters.pushed;
       totalOutstanding += counters.outstanding;
@@ -170,23 +154,21 @@ struct IoChannelCounterAggregator {
       maxRead99p9 = std::max(maxRead99p9, (int)counters.readHist.getPercentile(99.9));
       maxWrite99p9 = std::max(maxWrite99p9, (int)counters.writeHist.getPercentile(99.9));
    }
-   void print(std::ostream& ss)
-   {
+   void print(std::ostream& ss) const {
       ss << "ioaggr:(" << count << ")[p: " << totalPushed << " o: " << totalOutstanding << " c: " << totalCompleted / KILO << "k] ";
       ss << "hist: [read:( m99p9:" << maxRead99p9 << ")";
       ss << " write:(m99p9:" << maxWrite99p9 << ")]";
    }
 };
 class RemoteIoChannel;
-class IoChannel
-{
-  public:
+class IoChannel {
+ public:
    // -------------------------------------------------------------------------------------
    IoChannelCounters counters;
    // -------------------------------------------------------------------------------------
-   IoChannel(int devices) : counters(devices) { }
+   IoChannel(int devices) : counters(devices) {}
    // -------------------------------------------------------------------------------------
-   virtual ~IoChannel(){ };
+   virtual ~IoChannel() = default;
    // -------------------------------------------------------------------------------------
    void printCounters(std::ostream& ss);
    // -------------------------------------------------------------------------------------
@@ -210,12 +192,12 @@ class IoChannel
    virtual bool readStackFull() = 0;
    virtual bool writeStackFull() = 0;
    virtual void registerRemoteChannel(RemoteIoChannel* rem) = 0;
-   virtual int registerBuffers(std::vector<std::pair<void*, uint64_t>>& ) { return -1; };
+   virtual int registerBuffers(std::vector<std::pair<void*, uint64_t>>& buffers) { return -1; };
    // -------------------------------------------------------------------------------------
-   virtual int submitMin() {return 1; } // minium number of ios so that they can be submitted. Else less or none of the ios that have been pushed will be pushed.
+   virtual int submitMin() { return 1; } // minium number of ios so that they can be submitted. Else less or none of the ios that have been pushed will be pushed.
    virtual int submitable() = 0;
    // -------------------------------------------------------------------------------------
 };
 // -------------------------------------------------------------------------------------
-}
+} // namespace mean
 // -------------------------------------------------------------------------------------

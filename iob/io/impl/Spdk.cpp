@@ -6,7 +6,7 @@
 #include <regex>
 
 bool SpdkEnvironment::initialized = false;
-cmd_fun SpdkEnvironment::spdk_req_type_fun_lookup[(int)SpdkIoReqType::COUNT+1];
+cmd_fun SpdkEnvironment::spdk_req_type_fun_lookup[(int)SpdkIoReqType::COUNT + 1];
 bool SpdkEnvironment::isInitialized(bool init) {
    if (init) {
       initialized = init;
@@ -20,7 +20,7 @@ void SpdkEnvironment::ensureInitialized() {
 }
 int otherFlush(spdk_nvme_ns* ns, spdk_nvme_qpair* qpair, void*, uint64_t, uint32_t, spdk_nvme_cmd_cb cb_fn, void* cb_arg, uint32_t) {
    std::cout << "flush" << std::flush << std::endl;
-   return spdk_nvme_ns_cmd_flush(ns, qpair, cb_fn, cb_arg);  
+   return spdk_nvme_ns_cmd_flush(ns, qpair, cb_fn, cb_arg);
 }
 void SpdkEnvironment::init() {
    if (isInitialized()) {
@@ -35,9 +35,9 @@ void SpdkEnvironment::init() {
    struct spdk_env_opts opts;
    int g_shm_id = -1;
    int g_dpdk_mem = 0;
-   int g_main_core = 0; // master must be in core_mask e.g. 0 in 0x1
+   int g_main_core = 0;          // master must be in core_mask e.g. 0 in 0x1
    char g_core_mask[16] = "0x1"; //"0xffffffff";
-   //bool g_vmd = false;
+   // bool g_vmd = false;
 
    spdk_env_opts_init(&opts);
    opts.name = "meanio_spdk_env_name";
@@ -86,7 +86,7 @@ NVMeController::NVMeController() {
 NVMeController::~NVMeController() {
    if (ctrlr) {
       std::cout << "NVMeController destructor submitted: " << submitted << " dones: " << dones << std::endl;
-      //printPciQpairStats();
+      // printPciQpairStats();
       for (auto q: qpairs) {
          spdk_nvme_ctrlr_free_io_qpair(q);
       }
@@ -94,7 +94,7 @@ NVMeController::~NVMeController() {
    }
 }
 // -------------------------------------------------------------------------------------
-void NVMeController::connect(std::string pciefile)  {
+void NVMeController::connect(std::string pciefile) {
    this->pciefile = pciefile;
    std::memset(&trid, 0, sizeof(trid));
    spdk_nvme_trid_populate_transport(&trid, SPDK_NVME_TRANSPORT_PCIE);
@@ -110,7 +110,7 @@ void NVMeController::connect(std::string pciefile)  {
    }
    cdata = spdk_nvme_ctrlr_get_data(ctrlr);
 
-   std::regex rns ("ns=(\\d+)");
+   std::regex rns("ns=(\\d+)");
    std::smatch nsm;
    std::regex_search(pciefile, nsm, rns);
    int ns = 1;
@@ -129,46 +129,43 @@ void NVMeController::connect(std::string pciefile)  {
    snprintf(tmpStr, sizeof(tmpStr), "%-20.20s (%-20.20s)", cdata->mn, cdata->sn);
    std::string name(tmpStr);
    std::cout << "Connected: " << trid.traddr << " name: " << name;
-   std::cout << " size: " << nsSize()/1024/1024/1024 << " GiB (" << nsSize() << " byte)";
+   std::cout << " size: " << nsSize() / 1024 / 1024 / 1024 << " GiB (" << nsSize() << " byte)";
    std::cout << " sector size: " << spdk_nvme_ns_get_sector_size(nameSpace);
    std::cout << " namespaces: " << numberNamespaces();
    std::cout << " max_io_xfer_size: " << spdk_nvme_ns_get_max_io_xfer_size(nameSpace) << std::endl;
 
+   const struct spdk_nvme_ns_data* ns_data = spdk_nvme_ns_get_data(spdk_nvme_ctrlr_get_ns(ctrlr, ns));
+   std::cout << "selected ns: " << ns << " active: " << spdk_nvme_ns_is_active(nameSpace) << " nsze: " << ns_data->nsze << " ncap: " << ns_data->ncap << " nuse: " << ns_data->nuse << std::endl;
+   ns_capcity_lbas = ns_data->ncap;
 
-   const struct spdk_nvme_ns_data*  ns_data = spdk_nvme_ns_get_data(spdk_nvme_ctrlr_get_ns(ctrlr, ns));
-   std::cout << "selected ns: " << ns << " active: " << spdk_nvme_ns_is_active(nameSpace) << " nsze: " << ns_data->nsze << " ncap: " << ns_data->ncap << " nuse: "<< ns_data->nuse << std::endl;
-	ns_capcity_lbas = ns_data->ncap;
-
-	/*
-   for (unsigned int i = 1; i < numberNamespaces() + 1; i++) {
-      const struct spdk_nvme_ns_data*  ns_data = spdk_nvme_ns_get_data(spdk_nvme_ctrlr_get_ns(ctrlr, i));
-      std::cout << "ns: " << i << " active: " << spdk_nvme_ns_is_active(spdk_nvme_ctrlr_get_ns(ctrlr, i)) << " nsze: " << ns_data->nsze << " ncap: " << ns_data->ncap << " nuse: "<< ns_data->nuse << std::endl;
-   }
-	*/
+   /*
+for (unsigned int i = 1; i < numberNamespaces() + 1; i++) {
+ const struct spdk_nvme_ns_data*  ns_data = spdk_nvme_ns_get_data(spdk_nvme_ctrlr_get_ns(ctrlr, i));
+ std::cout << "ns: " << i << " active: " << spdk_nvme_ns_is_active(spdk_nvme_ctrlr_get_ns(ctrlr, i)) << " nsze: " << ns_data->nsze << " ncap: " << ns_data->ncap << " nuse: "<< ns_data->nuse << std::endl;
+}
+   */
 }
 // -------------------------------------------------------------------------------------
-uint32_t NVMeController::nsLbaDataSize()  {
-   return spdk_nvme_ns_get_sector_size(nameSpace); 
+uint32_t NVMeController::nsLbaDataSize() {
+   return spdk_nvme_ns_get_sector_size(nameSpace);
 }
 // -------------------------------------------------------------------------------------
-uint64_t NVMeController::nsSize()  {
+uint64_t NVMeController::nsSize() {
    return spdk_nvme_ns_get_size(nameSpace);
 }
 // -------------------------------------------------------------------------------------
-void NVMeController::allocateQPairs()  {
+void NVMeController::allocateQPairs() {
    allocateQPairs(-1);
 }
 // -------------------------------------------------------------------------------------
-void NVMeController::completion(void *cb_arg, const struct spdk_nvme_cpl *cpl) {
+void NVMeController::completion(void* cb_arg, const struct spdk_nvme_cpl* cpl) {
    auto request = static_cast<SpdkIoReq*>(cb_arg);
    if (spdk_nvme_cpl_is_error(cpl)) {
-      spdk_nvme_qpair_print_completion(request->qpair, (struct spdk_nvme_cpl *)cpl);
-      throw std::logic_error("spdk completion failed: " 
-            + std::string(spdk_nvme_cpl_get_status_string(&cpl->status)) 
-            + "\nnote this often happens when buffers have not been allocated using spdk rte.");
+      spdk_nvme_qpair_print_completion(request->qpair, (struct spdk_nvme_cpl*)cpl);
+      throw std::logic_error("spdk completion failed: " + std::string(spdk_nvme_cpl_get_status_string(&cpl->status)) + "\nnote this often happens when buffers have not been allocated using spdk rte.");
    }
-	request->append_lba = cpl->cdw0; // new lba set by zone_append
-   //std::cout << "completion: req: "<< std::hex << (uint64_t)request << " id: " << request->id << " buf: " << (uint64_t) request->buf << std::endl;
+   request->append_lba = cpl->cdw0; // new lba set by zone_append
+   // std::cout << "completion: req: "<< std::hex << (uint64_t)request << " id: " << request->id << " buf: " << (uint64_t) request->buf << std::endl;
    request->callback(request);
 };
 // -------------------------------------------------------------------------------------
@@ -188,12 +185,12 @@ void NVMeController::allocateQPairs(int number) {
    for (int i = 0; i < number; i++) {
       struct spdk_nvme_io_qpair_opts opts;
       spdk_nvme_ctrlr_get_default_io_qpair_opts(ctrlr, &opts, sizeof(opts));
-      //opts.qprio = static_cast<spdk_nvme_qprio>(prio & SPDK_NVME_CREATE_IO_SQ_QPRIO_MASK);
+      // opts.qprio = static_cast<spdk_nvme_qprio>(prio & SPDK_NVME_CREATE_IO_SQ_QPRIO_MASK);
       opts.delay_cmd_submit = true;
       opts.create_only = true;
       opts.io_queue_size = 4096;
       opts.io_queue_requests = opts.io_queue_size;
-      //std::cout << "doorbell: " << opts.delay_cmd_submit << " opts.io_queue_size: " << opts.io_queue_size << std::endl;
+      // std::cout << "doorbell: " << opts.delay_cmd_submit << " opts.io_queue_size: " << opts.io_queue_size << std::endl;
       auto* qpair = spdk_nvme_ctrlr_alloc_io_qpair(ctrlr, &opts, sizeof(opts));
       if (!qpair) {
          throw std::logic_error("ERROR: spdk_nvme_ctrlr_alloc_io_qpair() failed\n");
@@ -209,11 +206,11 @@ void NVMeController::allocateQPairs(int number) {
          throw std::logic_error("can't connect qpair err: " + std::to_string(r));
       }
       pollGroups.push_back(group);
-      //cout << "qpair attached: " << i << endl;
+      // cout << "qpair attached: " << i << endl;
    }
 }
 // -------------------------------------------------------------------------------------
-int32_t NVMeController::qpairSize()  {
+int32_t NVMeController::qpairSize() {
    return qpairs.size();
 }
 // -------------------------------------------------------------------------------------
@@ -221,7 +218,7 @@ int NVMeController::requestMaxQPairs() {
    int sub, comp;
    requestMaxQPairs(sub, comp);
    assert(sub == comp);
-   return sub; 
+   return sub;
 }
 // -------------------------------------------------------------------------------------
 void NVMeController::requestMaxQPairs(int32_t& subQs, int32_t& compQs) {
@@ -244,13 +241,13 @@ bool NVMeController::requestFeature(int32_t feature, struct spdk_nvme_cpl& cpl) 
     */
    struct spdk_nvme_cmd cmd = {};
    cmd.opc = SPDK_NVME_OPC_GET_FEATURES;
-   cmd.cdw10_bits.get_features.fid = feature; 
+   cmd.cdw10_bits.get_features.fid = feature;
 
    return pushRawCmd(cmd, cpl);
 }
 // -------------------------------------------------------------------------------------
 bool NVMeController::pushRawCmd(struct spdk_nvme_cmd& cmd, struct spdk_nvme_cpl& cpl) {
-   auto fn = [](void *myCplPtr, const struct spdk_nvme_cpl *cpl) {
+   auto fn = [](void* myCplPtr, const struct spdk_nvme_cpl* cpl) {
       struct spdk_nvme_cpl* myCpl = reinterpret_cast<struct spdk_nvme_cpl*>(myCplPtr);
       if (spdk_nvme_cpl_is_error(cpl)) {
          std::cout << "get_feature() failed" << std::endl;
@@ -262,9 +259,9 @@ bool NVMeController::pushRawCmd(struct spdk_nvme_cmd& cmd, struct spdk_nvme_cpl&
    while (outstanding_commands) {
       outstanding_commands -= spdk_nvme_ctrlr_process_admin_completions(ctrlr);
    }
-   bool ok = !spdk_nvme_cpl_is_error(&cpl); 
-   //checkThrow(ok, "pushRawCmd failed");
-   return ok; 
+   bool ok = !spdk_nvme_cpl_is_error(&cpl);
+   // checkThrow(ok, "pushRawCmd failed");
+   return ok;
 }
 // -------------------------------------------------------------------------------------
 bool NVMeController::checkArbitrationRoundRobinCap() {
@@ -285,7 +282,7 @@ void NVMeController::setArbitration(int low, int middle, int high) {
    struct spdk_nvme_cpl cpl = {};
    bool ok = pushRawCmd(cmd, cpl);
    checkThrow(ok, "setArbitration failed");
-   //ret = spdk_nvme_ctrlr_cmd_admin_raw(ctrlr, &cmd, NULL, 0,
+   // ret = spdk_nvme_ctrlr_cmd_admin_raw(ctrlr, &cmd, NULL, 0,
    //		set_feature_completion, &features[SPDK_NVME_FEAT_ARBITRATION]);
 }
 // -------------------------------------------------------------------------------------
@@ -302,7 +299,7 @@ void NVMeController::printArbitrationFeatures() {
       printf("no limit\n");
    } else {
       printf("%u\n", 1u << arb.feat_arbitration.bits.ab);
-   }		 
+   }
 
    printf("Low Priority Weight:				 %u\n", arb.feat_arbitration.bits.lpw + 1);
    printf("Medium Priority Weight:			 %u\n", arb.feat_arbitration.bits.mpw + 1);
@@ -312,8 +309,8 @@ void NVMeController::printArbitrationFeatures() {
 // -------------------------------------------------------------------------------------
 void NVMeController::printPciQpairStats() {
    for (auto group: pollGroups) {
-      struct spdk_nvme_poll_group_stat *stat = NULL;
-      if(spdk_nvme_poll_group_get_stats(group, &stat)){
+      struct spdk_nvme_poll_group_stat* stat = NULL;
+      if (spdk_nvme_poll_group_get_stats(group, &stat)) {
          throw std::logic_error("");
       }
       for (unsigned i = 0; i < stat->num_transports; i++) {
@@ -373,7 +370,7 @@ return spdk_nvme_ns_cmd_write(nameSpace, qpairs[qpair], req.buf, req.lba, req.lb
 */
 // -------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------
-void NVMeMultiController::connect(std::string connectionString)  {
+void NVMeMultiController::connect(std::string connectionString) {
    std::istringstream iss(connectionString);
    std::string device;
    std::vector<std::string> devices;
@@ -386,7 +383,7 @@ void NVMeMultiController::connect(std::string connectionString)  {
    }
 }
 // -------------------------------------------------------------------------------------
-void NVMeMultiController::allocateQPairs()  {
+void NVMeMultiController::allocateQPairs() {
    for (auto& c: controller) {
       c.allocateQPairs();
    }
@@ -398,7 +395,7 @@ void NVMeMultiController::allocateQPairs(int num) {
    }
 }
 // -------------------------------------------------------------------------------------
-int32_t NVMeMultiController::qpairSize()  {
+int32_t NVMeMultiController::qpairSize() {
    int32_t min = std::numeric_limits<int32_t>::max();
    for (auto& c: controller) {
       min = std::min(min, c.qpairSize());
@@ -410,7 +407,7 @@ int32_t NVMeMultiController::qpairSize()  {
 }
 // -------------------------------------------------------------------------------------
 // OPTIMIZE
-uint32_t NVMeMultiController::nsLbaDataSize()  {
+uint32_t NVMeMultiController::nsLbaDataSize() {
    uint32_t dataSize = controller[0].nsLbaDataSize();
    for (auto& c: controller) {
       if (dataSize != c.nsLbaDataSize()) {
@@ -420,7 +417,7 @@ uint32_t NVMeMultiController::nsLbaDataSize()  {
    return dataSize;
 }
 // -------------------------------------------------------------------------------------
-uint64_t NVMeMultiController::nsSize()  {
+uint64_t NVMeMultiController::nsSize() {
    uint64_t size = std::numeric_limits<uint64_t>::max();
    for (auto& c: controller) {
       size = std::min(size, c.nsSize());
@@ -432,32 +429,32 @@ int NVMeMultiController::deviceCount() {
    return controller.size();
 }
 // -------------------------------------------------------------------------------------
-void NVMeRaid0::connect(std::string connectionString)  {
+void NVMeRaid0::connect(std::string connectionString) {
    multi.connect(connectionString);
 }
 // -------------------------------------------------------------------------------------
-void NVMeRaid0::allocateQPairs()  {
+void NVMeRaid0::allocateQPairs() {
    multi.allocateQPairs();
 }
 // -------------------------------------------------------------------------------------
-void NVMeRaid0::allocateQPairs(int num)  {
+void NVMeRaid0::allocateQPairs(int num) {
    multi.allocateQPairs(num);
 }
 // -------------------------------------------------------------------------------------
-int32_t NVMeRaid0::qpairSize()  {
+int32_t NVMeRaid0::qpairSize() {
    return multi.qpairSize();
 }
 // -------------------------------------------------------------------------------------
 // OPTIMIZE
-uint32_t NVMeRaid0::nsLbaDataSize()  {
+uint32_t NVMeRaid0::nsLbaDataSize() {
    return multi.nsLbaDataSize();
 }
 // -------------------------------------------------------------------------------------
-uint64_t NVMeRaid0::nsSize()  {
+uint64_t NVMeRaid0::nsSize() {
    return multi.nsSize();
 }
 // -------------------------------------------------------------------------------------
-void NVMeRaid0::submit(int queue, SpdkIoReq* req)  {
+void NVMeRaid0::submit(int queue, SpdkIoReq* req) {
    const int deviceCnt = multi.controller.size();
    assert(lbasPerDevice >= req->lba_count);
    Raid0 raidImpl(deviceCnt, lbasPerDevice); // non-generic raid0 implementation.
@@ -466,7 +463,7 @@ void NVMeRaid0::submit(int queue, SpdkIoReq* req)  {
    multi.controller[deviceSelector].submit(queue, req);
 }
 // -------------------------------------------------------------------------------------
-int32_t NVMeRaid0::process(int queue, int max)  {
+int32_t NVMeRaid0::process(int queue, int max) {
    int32_t done = 0;
    for (auto& c: multi.controller) {
       done += c.process(queue, max);

@@ -3,13 +3,14 @@
 //
 #pragma once
 
+#include "Exceptions.hpp"
 #include "SSD.hpp"
 
-#include <fstream>
+#include <algorithm>
 #include <csignal>
+#include <fstream>
 #include <list>
 #include <random>
-#include <algorithm>
 
 class GreedyGC {
    SSD& ssd;
@@ -22,19 +23,20 @@ class GreedyGC {
    std::mt19937_64 gen{rd()};
    std::uniform_int_distribution<uint64_t> rndBlockDist;
    std::list<uint64_t> freeBlocks;
-public:
-   GreedyGC(SSD& ssd, int k = 0, bool twoR = false) : ssd(ssd), k(k), rndBlockDist(0, ssd.zones-1), simpleTwoR(twoR) {
-      for (uint64_t z=0; z < ssd.zones; z++) {
+
+ public:
+   GreedyGC(SSD& ssd, int k = 0, bool twoR = false) : ssd(ssd), k(k), simpleTwoR(twoR), rndBlockDist(0, ssd.blockCount - 1) {
+      for (uint64_t z = 0; z < ssd.blockCount; z++) {
          freeBlocks.push_back(z);
       }
       currentBlock = freeBlocks.front();
       freeBlocks.pop_front();
    }
-   string name() {
+   string name() const {
       if (simpleTwoR) {
          return "greedy-s2r";
       }
-      if (k==0) {
+      if (k == 0) {
          return "greedy";
       }
       return "greedy-k" + std::to_string(k);
@@ -50,27 +52,48 @@ public:
       }
       ssd.writePage(pageId, currentBlock);
    }
-   uint64_t singleGreedy() {
-      uint64_t minIdx;
+   int64_t singleGreedy() {
+      int64_t minIdx = -1;
       uint64_t minCnt = std::numeric_limits<uint64_t>::max();
-      for (uint64_t i = 0; i < ssd.zones; i++) {
+      for (uint64_t i = 0; i < ssd.blockCount; i++) {
          const SSD::Block& block = ssd.blocks()[i];
          if (block.validCnt() < minCnt && block.fullyWritten()) { // only use full blocks for gc
             minIdx = i;
             minCnt = block.validCnt();
          }
       }
+      ensure(minIdx != -1);
+      return minIdx;
+   }
+   int64_t singleGreedyLimited() {
+      constexpr int n = 10000;
+      int64_t minIdx = -1;
+      uint64_t minCnt = std::numeric_limits<uint64_t>::max();
+      std::uniform_int_distribution<uint64_t> dist(0, ssd.blockCount - 1);
+      uint64_t startIdx = dist(gen);
+      uint64_t idx = startIdx;
+      for (uint64_t i = 0; i < n; i++) {
+         const SSD::Block& block = ssd.blocks()[idx];
+         if (block.fullyWritten() && block.validCnt() < minCnt) {
+            minIdx = idx;
+            minCnt = block.validCnt();
+         }
+         idx++;
+         if (idx == ssd.blockCount) { idx = 0; }
+      }
+      ensure(minIdx != -1);
       return minIdx;
    }
    void performGC() {
       if (!simpleTwoR) {
-         uint64_t victimBlockIdx;
+         int64_t victimBlockIdx = -1;
          if (k == 0) {
             victimBlockIdx = singleGreedy();
-            //writezone = random() % zones;
+            //victimBlockIdx = singleGreedyLimited();
+            // writezone = random() % zones;
          } else {
             // perform k-greedy
-            uint64_t minIdx;
+            uint64_t minIdx = -1;
             uint64_t minCnt = std::numeric_limits<uint64_t>::max();
             int i = 0;
             do {
@@ -83,6 +106,7 @@ public:
             } while (i < k);
             victimBlockIdx = minIdx;
          }
+         ensure(victimBlockIdx != -1);
          ssd.compactBlock(victimBlockIdx);
          freeBlocks.push_back(victimBlockIdx);
       } else {

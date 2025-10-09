@@ -1,9 +1,8 @@
 #pragma once
 // -------------------------------------------------------------------------------------
-#include <stddef.h>
-#include <stdint.h>
-
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -30,12 +29,6 @@ using s16 = int16_t;
 using s32 = int32_t;
 using s64 = int64_t;
 // -------------------------------------------------------------------------------------
-using SIZE = size_t;
-using PID = u64;
-using LID = u64;   // Log ID
-using TTS = u64;   // Transaction Time Stamp
-using DTID = s64;  // Datastructure ID
-// -------------------------------------------------------------------------------------
 using TINYINT = s8;
 using SMALLINT = s16;
 using INTEGER = s32;
@@ -57,15 +50,15 @@ constexpr u64 MSB2 = u64(1) << 62;
 constexpr u64 MSB2_MASK = ~(MSB2);
 // -------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------
-constexpr u64 TERA = 1000ll * 1000 * 1000 * 1000;
-constexpr u64 GIGA = 1000ll * 1000 * 1000;
-constexpr u64 MEGA = 1000ll * 1000;
-constexpr u64 KILO = 1000ll;
+constexpr u64 TERA = 1000LL * 1000 * 1000 * 1000;
+constexpr u64 GIGA = 1000LL * 1000 * 1000;
+constexpr u64 MEGA = 1000LL * 1000;
+constexpr u64 KILO = 1000LL;
 // -------------------------------------------------------------------------------------
-constexpr u64 TEBI = 1024ll * 1024 * 1024 * 1024;
-constexpr u64 GIBI = 1024ll * 1024 * 1024;
-constexpr u64 MEBI = 1024ll * 1024;
-constexpr u64 KIBI = 1024ll;
+constexpr u64 TEBI = 1024LL * 1024 * 1024 * 1024;
+constexpr u64 GIBI = 1024LL * 1024 * 1024;
+constexpr u64 MEBI = 1024LL * 1024;
+constexpr u64 KIBI = 1024LL;
 // -------------------------------------------------------------------------------------
 constexpr double MILLI = 1e-3;
 constexpr double MICRO = 1e-6;

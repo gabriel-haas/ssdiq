@@ -7,31 +7,31 @@
 #endif
 
 namespace intrin {
-    // -------------------------------------------------------------------------------------
-    inline uint64_t readTSC() {
+// -------------------------------------------------------------------------------------
+inline uint64_t readTSC() {
 #ifdef __x86_64__
-        const uint64_t tsc = __rdtsc();
-        return tsc;
+   const uint64_t tsc = __rdtsc();
+   return tsc;
 #else
-        return 0;
+   return 0;
 #endif
-    }
-    inline uint64_t readTSCfenced() {
+}
+inline uint64_t readTSCfenced() {
 #ifdef __x86_64__
-        _mm_mfence();
-        const uint64_t tsc = __rdtsc();
-        _mm_mfence();
-        return tsc;
+   _mm_mfence();
+   const uint64_t tsc = __rdtsc();
+   _mm_mfence();
+   return tsc;
 #else
-        return 0;
+   return 0;
 #endif
-    }
-    // -------------------------------------------------------------------------------------
-    inline void pause() {
+}
+// -------------------------------------------------------------------------------------
+inline void pause() {
 #ifdef __x86_64__
-        _mm_pause();
+   _mm_pause();
 #endif
-    }
-    // -------------------------------------------------------------------------------------
+}
+// -------------------------------------------------------------------------------------
 } // namespace intrin
 // -------------------------------------------------------------------------------------
