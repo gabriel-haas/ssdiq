@@ -5,6 +5,7 @@
 #include "RequestGenerator.hpp"
 #include "ThreadBase.hpp"
 #include "Time.hpp"
+#include "Units.hpp"
 #include "io/IoInterface.hpp"
 #include "io/impl/NvmeLog.hpp"
 
@@ -151,12 +152,14 @@ std::tuple<mean::JobOptions, mean::IoOptions, iob::PatternGen::Options> loadOpti
    app.add_option("--rate", jobOptions.totalRate, "Total IO rate")->envname("RATE")->default_val(0);
    app.add_option("--exprate", jobOptions.exponentialRate, "Use exponential rate")->envname("EXPRATE")->default_val(1);
 
+   app.add_flag("--long_console_output", jobOptions.longConsoleOutput, "Enable long output in console")->envname("LONG_CONSOLE_OUTPUT");
+
    auto pgOptions = iob::PatternGen::setupCliOptions(app);
 
    try {
       app.parse(argc, argv);
    } catch (const CLI::ParseError& e) {
-      std::exit(app.exit(e)); // if you still want to exit like CLI11_PARSE
+      std::exit(app.exit(e));
    }
 
    jobOptions.filename = ioOptions.path;
@@ -191,13 +194,18 @@ std::tuple<mean::JobOptions, mean::IoOptions, iob::PatternGen::Options> loadOpti
       ioSize = -1;
    }
 
-   std::cout << "FILENAME: " << jobOptions.filename << std::endl;
-   std::cout << "BS: " << bufSize << std::endl;
-   std::cout << "FILESIZE: " << jobOptions.totalfilesize << " use: " << jobOptions.filesize << " (FILL: " << jobOptions.fill << ") in pages: " << jobOptions.maxPage << std::endl;
-   std::cout << "IO_SIZE: " << opsPerThread * bufSize / (float)(1 << 30) << "GiB pages: " << opsPerThread << " per thread" << std::endl;
-   std::cout << "INIT: " << jobOptions.init << std::endl;
-   std::cout << "IO_DEPTH: " << ioOptions.iodepth << std::endl;
-   std::cout << "IOENGINE: " << ioOptions.engine << std::endl;
+   std::cout << "filename: " << jobOptions.filename;
+   std::cout << " filesize: " << jobOptions.totalfilesize;
+   std::cout << " use: " << jobOptions.filesize;
+   std::cout << " (fill: " << jobOptions.fill << ")";
+   std::cout << " in pages: " << jobOptions.maxPage;
+   std::cout << std::endl;
+   std::cout << "io_size: " << opsPerThread * bufSize / (float)(1 << 30);
+   std::cout << " GiB pages: " << opsPerThread << " per thread" << std::endl;
+   std::cout << "init: " << jobOptions.init << ", crc: " << jobOptions.crc << ", random: " << jobOptions.randomData << std::endl;
+   std::cout << "ionengine: " << ioOptions.engine;
+   std::cout << " iodepth: " << ioOptions.iodepth;
+   std::cout << " bs: " << bufSize << std::endl;
 
    if (ioSize == 0) {
       exit(0);
@@ -268,14 +276,14 @@ int main(int argc, char** argv) {
          threadVec.emplace_back(std::move(std::make_unique<RequestGeneratorThread>(jobOptions, thr, time, patternGen, fileState)));
       }
    }
-   std::cout << "run" << endl;
    std::this_thread::sleep_for(std::chrono::milliseconds(1));
    for (auto& t: threadVec) {
       t->start();
    }
    long maxRead = 0;
-   // if (jobOptions.runtimeLimit > 0) {
-   cout << "runtime: " << jobOptions.runtimeLimit << " s" << endl;
+   if (jobOptions.runtimeLimit > 0) {
+      std::cout << "runtime: " << jobOptions.runtimeLimit << " s" << std::endl;
+   }
    auto start = getSeconds();
    // std::this_thread::sleep_for(std::chrono::seconds(1));
    long lastOCPUpdateTime = -1;
@@ -333,7 +341,9 @@ int main(int argc, char** argv) {
             int sys = system(s.c_str());
             assert(sys == 0);
          }
-         cout << header.str() << endl;
+         if (jobOptions.longConsoleOutput) {
+            std::cout << header.str() << std::endl;
+         }
       }
       std::stringstream ss;
       ss << "keep,ssd," << jobOptions.statsPrefix;
@@ -375,7 +385,15 @@ int main(int argc, char** argv) {
       ss << "," << nvmeLog.minUserDataEraseCount() << "," << (int)nvmeLog.currentThrottlingStatus();
       ss << "," << thisSecondWA;
       iobLog << ss.str() << endl;
-      cout << ss.str() << endl;
+      if (jobOptions.longConsoleOutput) {
+         std::cout << ss.str() << std::endl;
+      } else {
+         cout << time;
+         cout << " read: " << sumReadsPS*jobOptions.bs/MEBI << " MB/s (" << sumReadsPS << " IOPS)";
+         cout << " write: " << sumWritesPS*jobOptions.bs/MEBI << " MB/s (" << sumWritesPS << " IOPS)";
+         cout << " WA: " << thisSecondWA << " (phyW: " << thisSecondPhyWrites/MEBI << " phyR: " << thisSecondPhyReads/MEBI << ")";
+         cout << std::endl;
+      }
 
       string smartLine = jobOptions.statsPrefix + "," + to_string(time) + "," + jobOptions.logHash + "";
       std::string controller_filename = mean::NvmeLog::extract_nvme_controller(mean::NvmeLog::resolve_symlink(jobOptions.filename));
@@ -418,10 +436,12 @@ int main(int argc, char** argv) {
 
    u64 reads = 0;
    u64 writes = 0;
+   double ravg = 0;
    u64 r50p = 0;
    u64 r99p = 0;
    u64 r99p9 = 0;
    u64 w50p = 0;
+   double wavg = 0;
    u64 w99p = 0;
    u64 w99p9 = 0;
    u64 rTotalTime = 0;
@@ -446,7 +466,7 @@ int main(int argc, char** argv) {
    }
    std::sort(sampleLocs.begin(), sampleLocs.end());
    for (size_t i = 0; i < threadVec.size(); i++) {
-      cout << "thread " << i << endl;
+      //cout << "thread " << i << endl;
       auto& t = threadVec[i];
       reads += t->gen.stats.reads;
       writes += t->gen.stats.writes;
@@ -457,14 +477,17 @@ int main(int argc, char** argv) {
       w50p += t->gen.stats.writeHist.getPercentile(50);
       w99p += t->gen.stats.writeHist.getPercentile(99);
       w99p9 += t->gen.stats.writeHist.getPercentile(99.9);
+      ravg += t->gen.stats.readHist.getAverage();
+      wavg += t->gen.stats.writeHist.getAverage();
       rTotalTime += t->gen.stats.readTotalTime;
       wTotalTime += t->gen.stats.writeTotalTime;
       t->gen.ioTrace.dumpIoTrace(dump, std::to_string(jobOptions.iodepth) + "," + std::to_string(jobOptions.bs) + "," + std::to_string(0 /*alignment compatibility*/) + ",");
       t->gen.aggregatePatternAccess(accessHist);
-      cout << endl;
       t->gen.samplePatternAccess(sampleLocs, accesses);
       // t->gen.dumpPatternAccess("patterDump:: ", cout);
+      //cout << endl;
    }
+   /*
    cout << "sample:" << endl;
    for (auto s: sampleLocs) {
       cout << s << ",";
@@ -479,12 +502,14 @@ int main(int argc, char** argv) {
       cout << a << ",";
    }
    cout << endl;
-
+   */
    totalTime /= jobOptions.threads;
+   ravg /= jobOptions.threads;
    r50p /= jobOptions.threads;
    r99p /= jobOptions.threads;
    r99p9 /= jobOptions.threads;
    w50p /= jobOptions.threads;
+   wavg /= jobOptions.threads;
    w99p /= jobOptions.threads;
    w99p9 /= jobOptions.threads;
    dump << "filesize,fill,usedFileSize,io_size,filename,bs,rw,threads,iodepth,reads,writes,rmb,wmb,ravg,wavg,r50p,r99p,r99p9,w50p,w99p,w99p9" << std::endl;
@@ -504,6 +529,8 @@ int main(int argc, char** argv) {
       std::cout << " max read: " << maxRead / 1e6 << "M";
    };
    std::cout << std::endl;
+   std::cout << "latency [us]: read avg: " << ravg << " 50p: " << r50p << " 99p: " << r99p << " 99.9p: " << r99p9;
+   std::cout << " write avg: " << wavg << " 50p: " << w50p << " 99p: " << w99p << " 99.9p: " << w99p9 << std::endl;
 
    std::this_thread::sleep_for(std::chrono::seconds(1));
    std::cout << "fin" << std::endl;

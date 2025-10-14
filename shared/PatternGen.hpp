@@ -121,7 +121,7 @@ class PatternGen {
          shuffle = options.patternString.contains("-shuffle");
       }
       rndPage = std::uniform_int_distribution<uint64_t>(0, options.logicalPages - 1);
-      std::cout << "PatternGen: shuffle: " << shuffle << " totalWrites: " << options.totalWrites << std::endl;
+      //std::cout << "PatternGen: shuffle: " << shuffle << " totalWrites: " << options.totalWrites << std::endl;
       init();
    }
    PatternGen(Pattern pattern, uint64_t logicalPages, double skewFactor = 1.0, bool shuffle = true)

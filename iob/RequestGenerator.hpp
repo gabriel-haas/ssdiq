@@ -81,6 +81,8 @@ struct JobOptions {
 
    bool trackPatternAccess = false;
 
+   bool longConsoleOutput = false;
+
    // Stats options
    bool enableIoTracing = false;
    bool enableLatenyTracking = true;

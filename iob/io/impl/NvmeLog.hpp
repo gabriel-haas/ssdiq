@@ -103,7 +103,7 @@ class NvmeLog {
       // get the controler name, like /dev/nvmeX
       std::string resolved = resolve_symlink(name);
       std::string controller = extract_nvme_controller(resolved);
-      std::cout << "path: " << name << " resolved: " << resolved << " controller: " << controller << std::endl;
+      //std::cout << "path: " << name << " resolved: " << resolved << " controller: " << controller << std::endl;
       int fd = open(controller.c_str(), O_RDONLY | O_CLOEXEC);
       if (fd >= 0) {
          int ret = nvme_get_log_simple(fd, (nvme_cmd_get_log_lid)C0_SMART_CLOUD_ATTR_OPCODE, C0_SMART_CLOUD_ATTR_LEN, &log_data); // NOLINT

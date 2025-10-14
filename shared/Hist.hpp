@@ -65,6 +65,14 @@ class Hist {
       return from + (i / (float)size * (to - from));
    }
 
+   double getAverage() {
+      std::unique_lock<std::mutex> ul(lock);
+      if (cnt == 0) {
+         return 0;
+      }
+      return total / cnt;
+   }
+
    // Function to write percentiles header as a string
    void writePercentilesHeader(const std::string& prefix, std::string& result) {
       result += prefix + "min,";
