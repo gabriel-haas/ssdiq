@@ -21,6 +21,13 @@ This repository contains supplementary material for the SSD-iq paper, including 
 
 ## Building
 
+Required dependencies:
+
+```sh
+apt install cmake build-essential nvme-cli libaio-dev liburing-dev libnvme-dev
+```
+Build:
+
 ```sh
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
@@ -30,7 +37,7 @@ make
 ## Running IOB
 
 ```sh
-iob/iob --filename=/blk/w0 --filesize=10G --ioengine=io_uring --init=disable --io_size=10G --iodepth=128 --bs=4K --threads=4 --pattern=uniform --rw=0
+iob/iob --filename=/blk/w0 --filesize=10G --init=disable --io_size=10G --iodepth=128 --bs=4K --threads=4 --pattern=uniform --rw=0
 ```
 
 ## Running the GC Simulator
